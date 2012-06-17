@@ -4,170 +4,218 @@
 
 
 import random
+import sys
 
 MAX_COLORS = 6
 
-"""
-Initializes a random same game grid
-r: number of rows
-c: number of columns
-x: number of different colors
-"""
-def initGameGrid(r, c, x):
-    if x > MAX_COLORS:
-        x = MAX_COLORS
-    game = []
-    for i in range(0, r):
-        row = []
-        for j in range(0, c):
-            row.append(random.randint(0, x - 1))
-        game.append(row)
-    return game
-
-
-"""
-Finds a connected region from a seed point
-Used to determine how many (and which) cells to remove, if any, when the user clicks on a cell (y, x)
-Based of a BFS algorithm
-"""
-def connectedRegion(y, x, gameGrid):
-
-    r = len(gameGrid)
-
-    if r == 0:
-        return []
-    c = len(gameGrid[0])
+class SameGame:
     
-    if gameGrid[y][x] == -1:
-        return []
+    def __init__(self, *args, **kwargs):
 
-    #Cells remaining to process
-    queuedCells = []
-    queuedCells.append([y, x])
+        self.grid = []
+        self.r = 0
+        self.c = 0
+        self.x = 0
+        
+        #default constructor.
+        #do nothing
+        if len(args) == 0:
+            pass
 
-    #Cells already visited before
-    visitedCells = []
-    visitedCells.append([y, x])
+        #passing the list to the constructor as the only parameter
+        elif len(args) == 1:
+            self.grid = args[0]
+            self.r = len(self.grid)
+            if r > 0:
+                self.c = len(self.grid[0])
 
-    #Cells connectd to the starting seed point
-    connectedCells = []
-    connectedCells.append([y, x])
+        #passing the rows and columns of the grid
+        elif len(args) == 2:
+            self.r = args[0]
+            self.c = args[1]
 
-    #The 4 directions that define 'adjacent' property
-    #Here adjacent cells are vertically or horizontally adjacent
-    #For diagonal adjacency there would be 8 directions
-    #xDir = [-1, -1, -1, 0, 0, 1, 1, 1]
-    #yDir = [-1, 0, 1, -1, 1, -1, 0, 1]
-    xDir = [0, 0, -1, 1]
-    yDir = [-1, 1, 0, 0]
+        #passing the rows, columns and number of colors
+        elif len(args) == 3:
+            self.r = args[0]
+            self.c = args[1]
+            self.x = args[2]
 
-    #BFS while loop
-    #While there are unprocessed cells remaining
-    while len(queuedCells) > 0:
+            if self.x > MAX_COLORS:
+                self.x = MAX_COLORS
+            
+            #I can now generate a random grid
+            self.initGame()
 
-        #Get this cell's y and x coordinates
-        cell = queuedCells.pop(0)
-        y = cell[0]
-        x = cell[1]
+    """
+    Initializes a random same game grid
+    r: number of rows
+    c: number of columns
+    x: number of different colors
+    """
+    def initGame(self):
+        if self.r == 0 or self.c == 0 or self.x == 0:
+            print('Could not initialize game. Please set the number of rows, columns and colors to proceed.')
+            return
 
-        #Loop on possible adjacent cells
-        for i in range(0, 4):
+        #clear grid
+        self.grid = []
 
-            #Determine delta y, delta x, new y and new x
-            dy = yDir[i]
-            dx = xDir[i]
-            ny = y + dy
-            nx = x + dx
+        for i in range(0, self.r):
+            row = []
+            for j in range(0, self.c):
+                row.append(random.randint(0, self.x - 1))
+            self.grid.append(row)
 
-            #Make sure new y and x lie on the grid
-            if ny > -1 and ny < r and nx > -1 and nx < c:
+    """
+    Finds a connected region from a seed point
+    Used to determine how many (and which) cells to remove, if any, when the user clicks on a cell (y, x)
+    Based of a BFS algorithm
+    """
+    def connectedRegion(self, y, x):
+        
+        if self.grid[y][x] == -1:
+            return []
 
-                #Only process unvisited cells
-                if not visitedCells.count([ny, nx]):
+        #Cells remaining to process
+        queuedCells = []
+        queuedCells.append([y, x])
 
-                    #Make a cell visited as soon as you get here
-                    visitedCells.append([ny, nx])
+        #Cells already visited before
+        visitedCells = []
+        visitedCells.append([y, x])
 
-                    #Connectedness means that they share the same color, i.e. the same value
-                    if gameGrid[ny][nx] == gameGrid[y][x]:
-                        #If connected, add it to unprocessed cells to start traversing from this cell
-                        #Also add it to the list of connected region
-                        queuedCells.append([ny, nx])
-                        connectedCells.append([ny, nx])
-                        
-    return connectedCells                
-                
-"""
-Drops a number of cells from a column when the user clicks on some cell
-This function should be refactored to allow for multiple cells drops at once
-"""
-def dropColumn(y, x, gameGrid):
+        #Cells connectd to the starting seed point
+        connectedCells = []
+        connectedCells.append([y, x])
 
-    #Shift the column by one cell downwards
-    while y > 0:
-        gameGrid[y][x] = gameGrid[y-1][x]
-        y = y - 1
-    #Assign the upper most cell with -1
-    gameGrid[0][x] = -1
+        #The 4 directions that define 'adjacent' property
+        #Here adjacent cells are vertically or horizontally adjacent
+        #For diagonal adjacency there would be 8 directions
+        #xDir = [-1, -1, -1, 0, 0, 1, 1, 1]
+        #yDir = [-1, 0, 1, -1, 1, -1, 0, 1]
+        xDir = [0, 0, -1, 1]
+        yDir = [-1, 1, 0, 0]
 
-    return gameGrid
+        #BFS while loop
+        #While there are unprocessed cells remaining
+        while len(queuedCells) > 0:
 
-"""
-the user clicks on a cell while playing
-"""
-def click(y, x, gameGrid):
+            #Get this cell's y and x coordinates
+            cell = queuedCells.pop(0)
+            y = cell[0]
+            x = cell[1]
 
-    #Check for connected region
-    connectedCells = connectedRegion(y, x, gameGrid)
+            #Loop on possible adjacent cells
+            for i in range(0, 4):
 
-    #Sort the result
-    #This is important so that the dropColumn function can work correctly
-    #We should drop cells from above to bottom (from lower index to greater one)
-    #Example: if cells (0, 0) and (1, 0) are connected and are to be dropped
-    #If we star by dropping cell (1, 0) then cell (0, 0) would be equal to -1
-    #If we then attempt to drop cell (0, 0) no effect will happen
-    #The other way aroud would work because
-    #If we dropped (0, 0) and set it to -1 firstly we would still have cell(1, 0) unchanged
-    #Dropping cell (1, 0) then makes sense and does give the expected final results
-    connectedCells.sort()
-    length = len(connectedCells)
+                #Determine delta y, delta x, new y and new x
+                dy = yDir[i]
+                dx = xDir[i]
+                ny = y + dy
+                nx = x + dx
 
-    #Length can be 0, 1 or more
-    if length == 0:
-        #Click on empty cell
-        #I should put a message here
-        pass
+                #Make sure new y and x lie on the grid
+                if ny > -1 and ny < self.r and nx > -1 and nx < self.c:
 
-    else:
-        if length == 1:
-            #Click on a non-connected cell
-            #I should put a message here as well
+                    #Only process unvisited cells
+                    if not visitedCells.count([ny, nx]):
+
+                        #Make a cell visited as soon as you get here
+                        visitedCells.append([ny, nx])
+
+                        #Connectedness means that they share the same color, i.e. the same value
+                        if self.grid[ny][nx] == self.grid[y][x]:
+                            #If connected, add it to unprocessed cells to start traversing from this cell
+                            #Also add it to the list of connected region
+                            queuedCells.append([ny, nx])
+                            connectedCells.append([ny, nx])
+                            
+        return connectedCells                
+                    
+    """
+    Drops a number of cells from a column when the user clicks on some cell
+    This function should be refactored to allow for multiple cells drops at once
+    """
+    def dropColumn(self, y, x):
+
+        #Shift the column by one cell downwards
+        while y > 0:
+            self.grid[y][x] = self.grid[y-1][x]
+            y = y - 1
+        #Assign the upper most cell with -1
+        self.grid[0][x] = -1
+
+
+    """
+    the user clicks on a cell while playing
+    """
+    def click(self, y, x):
+
+        #Check for connected region
+        connectedCells = self.connectedRegion(y, x)
+
+        #Sort the result
+        #This is important so that the dropColumn function can work correctly
+        #We should drop cells from above to bottom (from lower index to greater one)
+        #Example: if cells (0, 0) and (1, 0) are connected and are to be dropped
+        #If we star by dropping cell (1, 0) then cell (0, 0) would be equal to -1
+        #If we then attempt to drop cell (0, 0) no effect will happen
+        #The other way aroud would work because
+        #If we dropped (0, 0) and set it to -1 firstly we would still have cell(1, 0) unchanged
+        #Dropping cell (1, 0) then makes sense and does give the expected final results
+        connectedCells.sort()
+        length = len(connectedCells)
+
+        #Length can be 0, 1 or more
+        if length == 0:
+            #Click on empty cell
+            #I should put a message here
             pass
 
         else:
-            #Click on a valid cell
-            #Drop cells now
-            for i in range(0, length):
-                
-                cell = connectedCells[i]
-                y = cell[0]
-                x = cell[1]
+            if length == 1:
+                #Click on a non-connected cell
+                #I should put a message here as well
+                pass
 
-                gameGrid = dropColumn(y, x, gameGrid)
-                
-    return gameGrid
+            else:
+                #Click on a valid cell
+                #Drop cells now
+                for i in range(0, length):
+                    
+                    cell = connectedCells[i]
+                    y = cell[0]
+                    x = cell[1]
+                    self.dropColumn(y, x)
+                    
 
-"""
-A helper function to display a list each row in a separate line
-"""
-def display(gameGrid):
-    r = len(gameGrid)
-    for i in range(0, r):
-        print(gameGrid[i])
-    print('***')
+    """
+    A helper function to display a list each row in a separate line
+    """
+    def display(self):
+        for i in range(0, self.r):
+            for j in range(0, self.c):
+                sys.stdout.write(str(self.grid[i][j]))
+                sys.stdout.write('\t')
+            print()
+        print('***')
 
+
+game = SameGame(10, 10, 4)
+game.initGame()
+game.display()
+
+game.click(3, 2)
+game.display()
+
+game.click(0, 1)
+game.display()
+
+game.click(1, 4)
+game.display()
 
 #Sampel usage
+"""
 gameGrid = initGameGrid(5, 5, 3)
 display(gameGrid)
 
@@ -179,3 +227,4 @@ display(gameGrid)
 
 gameGrid = click(1, 4, gameGrid)
 display(gameGrid)
+"""
