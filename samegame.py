@@ -147,6 +147,16 @@ class SameGame:
 
 
     """
+    column x is not empty
+    """
+    def dropRow(self, x):
+        for i in range(0, self.r):
+            for j in range(x, self.c):
+                self.grid[i][j] = -1
+                if j + 1 < self.c:
+                    self.grid[i][j] = self.grid[i][j + 1]
+
+    """
     the user clicks on a cell while playing
     """
     def click(self, y, x):
@@ -187,6 +197,11 @@ class SameGame:
                     y = cell[0]
                     x = cell[1]
                     self.dropColumn(y, x)
+
+                for j in range(self.c - 1, -1, -1):
+                    
+                    if self.grid[self.r-1][j] == -1:
+                        self.dropRow(j);
                     
 
     """
@@ -201,30 +216,9 @@ class SameGame:
         print('***')
 
 
-game = SameGame(10, 10, 4)
-game.initGame()
-game.display()
+#game = SameGame(10, 10, 4)
+#game.initGame()
+#game.display()
 
-game.click(3, 2)
-game.display()
-
-game.click(0, 1)
-game.display()
-
-game.click(1, 4)
-game.display()
-
-#Sampel usage
-"""
-gameGrid = initGameGrid(5, 5, 3)
-display(gameGrid)
-
-gameGrid = click(3, 2, gameGrid)
-display(gameGrid)
-
-gameGrid = click(0, 1, gameGrid)
-display(gameGrid)
-
-gameGrid = click(1, 4, gameGrid)
-display(gameGrid)
-"""
+#game.click(3, 2)
+#game.display()
